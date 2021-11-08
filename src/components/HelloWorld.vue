@@ -1,5 +1,6 @@
 <template>
     <div>
+        <h2>outage for {{currentTime}}</h2>
         <span v-if="loading">Loading...</span>
         <l-map ref="myMap" style="height: 500px" :zoom="zoom" :center="center">
             <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
@@ -28,13 +29,14 @@ export default {
             overlayBounds: [[41.4402817, -87.1074728],[44.4353735, -79.6697286]],
             geojson_outline: null,
             geojson_outage: null,
+            currentTime: "2021-11-08T18:40:01-05:00",
             outlineStyle: {fillOpacity: 0},
             loading: true,
         };
     },
     async created() {
         this.loading = true;
-        const outageResponse = fetch(`${process.env.BASE_URL}/current.geojson`)
+        const outageResponse = fetch(`${process.env.BASE_URL}/outage-${this.currentTime}.geojson`)
         const outlineResponse = fetch(`${process.env.BASE_URL}/outline.geojson`)
         this.geojson_outline = await outlineResponse.then(r => r.json());
         this.geojson_outage = await outageResponse.then(r => r.json());

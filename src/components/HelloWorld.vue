@@ -25,7 +25,6 @@ export default {
             '&copy; <a target="_blank" href="http://osm.org/copyright">OpenStreetMap</a> contributors',
             zoom: 12,
             center: [42.453606, -83.113742],
-            overlayImage: "/current.svg",
             overlayBounds: [[41.4402817, -87.1074728],[44.4353735, -79.6697286]],
             geojson_outline: null,
             geojson_outage: null,
@@ -35,8 +34,9 @@ export default {
     },
     async created() {
         this.loading = true;
-        const outageResponse = fetch("/current.geojson")
-        const outlineResponse = fetch("/outline.geojson")
+        console.log(process.env);
+        const outageResponse = fetch(`${process.env.BASE_URL}/current.geojson`)
+        const outlineResponse = fetch(`${process.env.BASE_URL}/outline.geojson`)
         this.geojson_outline = await outlineResponse.then(r => r.json());
         this.geojson_outage = await outageResponse.then(r => r.json());
         this.loading = false;

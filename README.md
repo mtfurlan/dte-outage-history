@@ -16,9 +16,9 @@ Attempt to show DTE outages over time
 * geojson: https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/2/query?WHERE=OBJECTID%3E0&outFields=*&f=geojson
 
 arcgis REST URL
-* ttps://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer
-* xport: https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/export
-* uery:  https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/query
+* https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer
+* export: https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/export
+* query:  https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/query
 
 https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/
 

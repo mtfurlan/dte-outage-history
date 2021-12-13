@@ -1,0 +1,16 @@
+version: '3.7'
+services:
+  postgres:
+    #image: postgis/postgis:14-master
+    # Modify postgis container to compile gdal with postgres support
+    # https://github.com/postgis/docker-postgis/issues/273
+    build:
+        context: ./docker-postgis/14-master
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5438:5432'
+    volumes:
+      - ./:/data

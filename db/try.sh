@@ -4,9 +4,42 @@ cd "$(dirname "$0")"
 
 file=raw.geojson
 base=${file%.geojson}
-
-#timestamp="2021-11-08T18:40:01-05:00"
 timestamp=1636414801
+table=test_table
+
+psql -U postgres -c "drop table if exists $table"
+psql -U postgres -c "
+CREATE TABLE IF NOT EXISTS $table (
+    ogc_fid SERIAL PRIMARY KEY,
+    timestamp timestamp,
+    objectid integer,
+    job_id character varying,
+    add_dttm timestamp,
+    tycod character varying,
+    num_cust integer,
+    num_cust_restored integer,
+    toal_cust_affected integer,
+    off_dttm timestamp,
+    est_rep_dttm timestamp,
+    cause character varying,
+    dev_name character varying,
+    dev_id integer,
+    dev_type integer,
+    dev_type_name character varying,
+    event_status character varying,
+    dispatch_dttm timestamp,
+    crew_status character varying,
+    est_rep_enddttm timestamp,
+    circuit_est_dttm timestamp,
+    circuit_est_enddttm timestamp,
+    storm_mode character varying,
+    shape_length double precision,
+    shape_area double precision,
+    service_center character varying,
+    geometry public.geometry(Polygon,4326)
+);"
+
+
 SQL=$(cat <<EOF
 SELECT
     datetime('$timestamp', 'unixepoch') AS timestamp,
@@ -39,5 +72,6 @@ FROM $base
 EOF
 )
 
-ogr2ogr -f "PostgreSQL" PG:"dbname=postgres user=postgres" -nln test_table -overwrite -dialect sqlite -sql "$SQL" -lco GEOMETRY_NAME=geometry "$file"
-psql -U postgres -c "SELECT * FROM test_table LIMIT 1"
+# -overwrite
+ogr2ogr -f "PostgreSQL" PG:"dbname=postgres user=postgres" -nln "$table"  -dialect sqlite -sql "$SQL" -lco GEOMETRY_NAME=geometry "$file"
+psql -U postgres -c "SELECT * FROM $table LIMIT 1"

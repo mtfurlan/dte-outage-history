@@ -1,5 +1,6 @@
 <template>
     <div>
+        <h2>outage for {{currentTime | formatUnixTime}}</h2>
         <h2>outage for {{currentTime}}</h2>
         <span v-if="loading">Loading...</span>
         <l-map ref="myMap" style="height: 500px" :zoom="zoom" :center="center">
@@ -12,6 +13,7 @@
 
 <script>
 import {LMap, LTileLayer, LGeoJson } from 'vue2-leaflet';
+import moment from 'moment-timezone'
 
 export default {
     components: {
@@ -19,6 +21,13 @@ export default {
         LTileLayer,
         LGeoJson,
     },
+	filters: {
+		formatUnixTime: function(value) {
+			if (value) {
+				return moment(value*1000).tz("America/Detroit").format('YYYY-MM-DD HH:mm z Z')
+			}
+		},
+	},
     data () {
         return {
             url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -29,14 +38,15 @@ export default {
             overlayBounds: [[41.4402817, -87.1074728],[44.4353735, -79.6697286]],
             geojson_outline: null,
             geojson_outage: null,
-            currentTime: "2021-11-08T18:40:01-05:00",
+            currentTime: 1636414801, //"2021-11-08T18:40:01-05:00",
             outlineStyle: {fillOpacity: 0},
             loading: true,
         };
     },
     async created() {
         this.loading = true;
-        const outageResponse = fetch(`${process.env.BASE_URL}/api/static/outage-${this.currentTime}.geojson`)
+        //const outageResponse = fetch(`${process.env.BASE_URL}/api/static/outage-${this.currentTime}.geojson`)
+        const outageResponse = fetch(`${process.env.BASE_URL}/api/outage/${this.currentTime}`)
         const outlineResponse = fetch(`${process.env.BASE_URL}/api/static/outline.geojson`)
         this.geojson_outline = await outlineResponse.then(r => r.json());
         this.geojson_outage = await outageResponse.then(r => r.json());

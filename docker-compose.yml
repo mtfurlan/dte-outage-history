@@ -1,0 +1,27 @@
+version: '3.7'
+services:
+  postgres:
+    #image: postgis/postgis with gdal-bin
+    build:
+        context: ./db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5438:5432'
+    volumes:
+      - ./db:/data
+  web:
+    image: node:16
+    command: "npm start"
+    volumes:
+      - ./web:/app
+    working_dir: /app
+    environment:
+      - PORT=3000
+    depends_on:
+      - postgres
+    ports:
+      - '3000:3000'
+    restart: unless-stopped

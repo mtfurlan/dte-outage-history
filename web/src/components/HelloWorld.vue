@@ -36,8 +36,8 @@ export default {
     },
     async created() {
         this.loading = true;
-        const outageResponse = fetch(`${process.env.BASE_URL}/outage-${this.currentTime}.geojson`)
-        const outlineResponse = fetch(`${process.env.BASE_URL}/outline.geojson`)
+        const outageResponse = fetch(`${process.env.BASE_URL}/api/static/outage-${this.currentTime}.geojson`)
+        const outlineResponse = fetch(`${process.env.BASE_URL}/api/static/outline.geojson`)
         this.geojson_outline = await outlineResponse.then(r => r.json());
         this.geojson_outage = await outageResponse.then(r => r.json());
         this.loading = false;

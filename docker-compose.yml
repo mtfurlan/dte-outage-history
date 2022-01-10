@@ -20,6 +20,21 @@ services:
     working_dir: /app
     environment:
       - PORT=4000
+    restart: unless-stopped
+
+  api:
+    image: node:16
+    command: "npm start"
+    volumes:
+      - ./api:/app
+    working_dir: /app
+    environment:
+      - PORT=4000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     depends_on:
       - postgres
     restart: unless-stopped
@@ -28,10 +43,14 @@ services:
     image: nginx:latest
     volumes:
       - ./nginx.template:/etc/nginx/templates/default.conf.template
-      - ../:/var/www
     ports:
       - 8088:80
     environment:
         - NGINX_PORT=80
+        - API_PORT=4000
+        - API_NAME=api
         - APP_PORT=4000
         - APP_NAME=web
+    depends_on:
+      - web
+      - api

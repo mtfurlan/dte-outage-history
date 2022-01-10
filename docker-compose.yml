@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   postgres:
-    #image: postgis/postgis with gdal-bin
+    # based on postgis/postgis with gdal-bin
     build:
         context: ./db
     restart: unless-stopped
@@ -19,9 +19,19 @@ services:
       - ./web:/app
     working_dir: /app
     environment:
-      - PORT=3000
+      - PORT=4000
     depends_on:
       - postgres
-    ports:
-      - '3000:3000'
     restart: unless-stopped
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.template:/etc/nginx/templates/default.conf.template
+      - ../:/var/www
+    ports:
+      - 8088:80
+    environment:
+        - NGINX_PORT=80
+        - APP_PORT=4000
+        - APP_NAME=web

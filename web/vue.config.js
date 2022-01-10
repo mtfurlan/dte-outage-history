@@ -1,6 +1,7 @@
 module.exports = {
-    publicPath: process.env.NODE_ENV === "production" ? "/dte-outage-history" : "",
+    publicPath: "",
     devServer: {
+        public: "0.0.0.0:0",
         disableHostCheck: true
     }
 };

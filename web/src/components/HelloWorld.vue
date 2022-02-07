@@ -21,13 +21,13 @@ export default {
         LTileLayer,
         LGeoJson,
     },
-	filters: {
-		formatUnixTime: function(value) {
-			if (value) {
-				return moment(value*1000).tz("America/Detroit").format('YYYY-MM-DD HH:mm z Z')
-			}
-		},
-	},
+    filters: {
+        formatUnixTime: function(value) {
+            if (value) {
+                return moment(value*1000).tz("America/Detroit").format('YYYY-MM-DD HH:mm z Z')
+            }
+        },
+    },
     data () {
         return {
             url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

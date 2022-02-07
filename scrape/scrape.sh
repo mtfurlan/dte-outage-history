@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 # TODO: 2021-12-13 looks like between 2021-11-08 and now the GISRest stuff stopped supporting etag.
 # Just always returns a new etag now.
 # YAAAAY
+# fdupes -dN output/
 
 # */5 * * * * /$whatever/cronic /$whatever/scrape.sh
 
@@ -46,4 +47,3 @@ curl  \
     --etag-compare $etagFile \
     -o "output/outage-$(date --iso=seconds).geojson" \
     "$geojson"
-

@@ -4,7 +4,7 @@ Attempt to show DTE outages over time
 ## Running
 ```
 docker-compose up
-docker exec -it dte-outage-history_postgres_1 /bin/bash -c "cd /data && ./try.sh"
+docker exec -it dte-outage-history_postgres_1 /bin/bash -c "cd /script && ./try.sh"
 ```
 go to http://localhost:8088
 

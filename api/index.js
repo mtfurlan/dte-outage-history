@@ -33,7 +33,7 @@ app.get('/api/outage/:time', function (req, res) {
                	   'geometry',   ST_AsGeoJSON(geometry)::jsonb,
                	   'properties', to_jsonb(inputs) - 'ogc_fid' - 'geometry'
                  ) AS feature
-                 FROM (SELECT * FROM test_table WHERE timestamp = to_timestamp($1)) inputs) features;
+                 FROM (SELECT * FROM outage_events WHERE timestamp = to_timestamp($1)) inputs) features;
                `;
 
 	pool.query(sql, [req.params.time], (err,data)=>{

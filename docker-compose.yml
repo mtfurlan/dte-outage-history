@@ -11,7 +11,8 @@ services:
     ports:
       - '5438:5432'
     volumes:
-      - ./db:/data
+      - ./db:/script
+      - ./scrape/output:/data
   web:
     image: node:16
     command: "npm start"

@@ -2,43 +2,48 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-file=raw.geojson
-base=${file%.geojson}
-timestamp=1636414801
-table=test_table
+table=outage_events
 
 psql -U postgres -c "drop table if exists $table"
 psql -U postgres -c "
 CREATE TABLE IF NOT EXISTS $table (
-    ogc_fid SERIAL PRIMARY KEY,
-    timestamp timestamp,
-    objectid integer,
-    job_id character varying,
-    add_dttm timestamp,
-    tycod character varying,
-    num_cust integer,
-    num_cust_restored integer,
-    toal_cust_affected integer,
-    off_dttm timestamp,
-    est_rep_dttm timestamp,
-    cause character varying,
-    dev_name character varying,
-    dev_id integer,
-    dev_type integer,
-    dev_type_name character varying,
-    event_status character varying,
-    dispatch_dttm timestamp,
-    crew_status character varying,
-    est_rep_enddttm timestamp,
-    circuit_est_dttm timestamp,
-    circuit_est_enddttm timestamp,
-    storm_mode character varying,
-    shape_length double precision,
-    shape_area double precision,
-    service_center character varying,
+    outageEventPK SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP WITH TIME ZONE,
+    objectid INTEGER,
+    job_id CHARACTER VARYING,
+    add_dttm TIMESTAMP WITH TIME ZONE,
+    tycod CHARACTER VARYING,
+    num_cust INTEGER,
+    num_cust_restored INTEGER,
+    toal_cust_affected INTEGER,
+    off_dttm TIMESTAMP WITH TIME ZONE,
+    est_rep_dttm TIMESTAMP WITH TIME ZONE,
+    cause CHARACTER VARYING,
+    dev_name CHARACTER VARYING,
+    dev_id INTEGER,
+    dev_type INTEGER,
+    dev_type_name CHARACTER VARYING,
+    event_status CHARACTER VARYING,
+    dispatch_dttm TIMESTAMP WITH TIME ZONE,
+    crew_status CHARACTER VARYING,
+    est_rep_enddttm TIMESTAMP WITH TIME ZONE,
+    circuit_est_dttm TIMESTAMP WITH TIME ZONE,
+    circuit_est_enddttm TIMESTAMP WITH TIME ZONE,
+    storm_mode CHARACTER VARYING,
+    shape_length DOUBLE PRECISION,
+    shape_area DOUBLE PRECISION,
+    service_center CHARACTER VARYING,
     geometry public.geometry(Polygon,4326)
 );"
 
+
+cd /data
+for file in /data/*.geojson; do
+
+    fileBase=$(basename "$file" .geojson)
+    fileTime=${fileBase##outage-}
+
+    timestamp=$(date -d "$fileTime" +"%s")
 
 SQL=$(cat <<EOF
 SELECT
@@ -68,10 +73,12 @@ SELECT
     SHAPE_Area,
     SERVICE_CENTER,
     Geometry
-FROM $base
+FROM "$fileBase"
 EOF
 )
 
-# -overwrite
-ogr2ogr -f "PostgreSQL" PG:"dbname=postgres user=postgres" -nln "$table"  -dialect sqlite -sql "$SQL" -lco GEOMETRY_NAME=geometry "$file"
+    # -overwrite
+    #ogr2ogr -f "PostgreSQL" PG:"dbname=postgres user=postgres" -nln "$table"  -dialect sqlite -sql "$SQL" -lco GEOMETRY_NAME=geometry "$file"
+    ogr2ogr -f "PostgreSQL" PG:"dbname=postgres user=postgres" -nln "$table"  -dialect sqlite -sql "$SQL" "$file"
+done
 psql -U postgres -c "SELECT * FROM $table LIMIT 1"

@@ -2,11 +2,6 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# TODO: 2021-12-13 looks like between 2021-11-08 and now the GISRest stuff stopped supporting etag.
-# Just always returns a new etag now.
-# YAAAAY
-# fdupes -dN output/
-
 # */5 * * * * /$whatever/cronic /$whatever/scrape.sh
 
 image=https://outage.dteenergy.com/outageLayerImage.png
@@ -26,24 +21,35 @@ curl  \
 
 image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/export?dpi=96&transparent=true&format=svg&bbox=-9696759.515792493%2C5077501.619710184%2C-8868793.625407506%2C5533066.308289812&bboxSR=102100&imageSR=102100&size=1354%2C745&f=image'
 
-etagFile=.last-etag-svg
-
 curl  \
     -s -S \
     --dump-header /dev/fd/1 \
-    --etag-save $etagFile \
-    --etag-compare $etagFile \
     -o "output/outage-$(date --iso=seconds).svg" \
     "$image"
 
 geojson='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/2/query?WHERE=OBJECTID%3E0&outFields=*&f=geojson'
 
-etagFile=.last-etag-geojson
+# geojson is paginated if .exceededTransferLimit is true
+date=$(date --iso=seconds)
+finalFile="output/outage-$date.geojson"
+exceededTransferLimit=true
+offset=0
+while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; do
+    f="$finalFile-$offset"
+    echo "fetching offset $offset into $f"
+    curl  \
+        -s -S \
+        --retry 5 \
+        --dump-header /dev/fd/1 \
+        -o "$f" \
+        "$geojson&resultOffset=$offset"
 
-curl  \
-    -s -S \
-    --dump-header /dev/fd/1 \
-    --etag-save $etagFile \
-    --etag-compare $etagFile \
-    -o "output/outage-$(date --iso=seconds).geojson" \
-    "$geojson"
+    exceededTransferLimit=$(jq -r '.exceededTransferLimit' "$f")
+    offset=$(( offset + $(jq '.features | length' "$f") ))
+    echo "exceededTransferLimit $exceededTransferLimit"
+done
+
+# merge all geojson to one file
+#shellcheck disable=SC2086
+jq -s '{"type": .[0].type, "crs": .[0].crs, "features": map(.features[])}' "$finalFile"-* > $finalFile
+rm "$finalFile"-*

@@ -14,6 +14,7 @@ lastModifiedDate=$(TZ=GMT date -d "$lastImageDate" '+%a, %d %b %Y %T %Z')
 echo "last png file: $lastImageDate, parsed to $lastModifiedDate"
 curl  \
     -s -S \
+    --retry 5 \
     --dump-header /dev/fd/1 \
     --header "If-Modified-Since: $lastModifiedDate" \
     -o "output/outage-$(date --iso=seconds).png" \
@@ -23,6 +24,7 @@ image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations
 
 curl  \
     -s -S \
+    --retry 5 \
     --dump-header /dev/fd/1 \
     -o "output/outage-$(date --iso=seconds).svg" \
     "$image"

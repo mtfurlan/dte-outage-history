@@ -12,6 +12,7 @@ lastImageDate=$(find output -type f -iname "*.png" | sort | tail -n1 | sed 's/ou
 lastModifiedDate=$(TZ=GMT date -d "$lastImageDate" '+%a, %d %b %Y %T %Z')
 
 echo "last png file: $lastImageDate, parsed to $lastModifiedDate"
+echo "fetching png"
 curl  \
     -s -S \
     --retry 5 \
@@ -22,6 +23,7 @@ curl  \
 
 image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/export?dpi=96&transparent=true&format=svg&bbox=-9696759.515792493%2C5077501.619710184%2C-8868793.625407506%2C5533066.308289812&bboxSR=102100&imageSR=102100&size=1354%2C745&f=image'
 
+echo "fetching svg"
 curl  \
     -s -S \
     --retry 5 \
@@ -38,7 +40,7 @@ exceededTransferLimit=true
 offset=0
 while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; do
     f="$finalFile-$offset"
-    echo "fetching offset $offset into $f"
+    echo "fetching geojson, offset $offset into $f"
     curl  \
         -s -S \
         --retry 5 \
@@ -55,3 +57,7 @@ done
 #shellcheck disable=SC2086
 jq -s '{"type": .[0].type, "crs": .[0].crs, "features": map(.features[])}' "$finalFile"-* > $finalFile
 rm "$finalFile"-*
+filename=$(basename "$finalFile")
+cd output
+tar -czvf "./$filename.tgz" "./$filename"
+rm "$filename"

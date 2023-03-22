@@ -1,6 +1,26 @@
 # dte outage
 Attempt to show DTE outages over time
 
+DTE runs an arcgis server for it's outage information.
+I've been scraping it for a while.
+
+I would like to be able to answer questions like
+* how often power goes out at a given location
+* average outage duration for a given location
+* what the worst/best places are for some defintion of best/worst
+
+## Data
+I didn't realize that the geojson was paginated till recently.
+* 2021-11-08T15:36:27 to 2023-02-26T18:10:09: Truncated sometimes to 1k events.
+* 2023-02-26T18:11:20 and onwards not truncated
+* 2023-03-04T20:47:10 and onwards stored as geojson.tgz
+
+If you want any of this data, please let me know (email in commits, or an issue, or whatever)
+
+## next steps
+* figure out how to re-assemble the geojson exports into postgis
+* Actually do analysis
+
 ## Running
 ```
 docker-compose up

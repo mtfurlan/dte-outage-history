@@ -4,32 +4,61 @@ cd "$(dirname "$0")"
 
 # */5 * * * * /$whatever/cronic /$whatever/scrape.sh
 
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1} # default exit status 1
+    msg "$msg"
+    exit "$code"
+}
+
 image=https://outage.dteenergy.com/outageLayerImage.png
 
 date --iso=seconds >> dte-checks.log
 
-lastImageDate=$(find output -type f -iname "*.png" | sort | tail -n1 | sed 's/output\/outage-\(.*\).png/\1/')
-lastModifiedDate=$(TZ=GMT date -d "$lastImageDate" '+%a, %d %b %Y %T %Z')
+# lastImageDate=$(find output -type f -iname "*.png" | sort | tail -n1 | sed 's/output\/outage-\(.*\).png/\1/')
 
-echo "last png file: $lastImageDate, parsed to $lastModifiedDate"
+retryLoop () {
+    retries=0
+    until [ "$retries" -ge 5 ]; do
+        $($@) 2>&1 && break
+        retries=$((retries+1))
+        sleep 15
+    done
+    echo $retries
+}
+failure=false
 echo "fetching png"
-curl  \
+attempts=$(retryLoop curl  \
     -s -S \
     --retry 5 \
-    --dump-header /dev/fd/1 \
-    --header "If-Modified-Since: $lastModifiedDate" \
     -o "output/outage-$(date --iso=seconds).png" \
-    "$image"
+    "$image")
+if [ "$attempts" -ne 0 ]; then
+    echo "png attempts: $attempts" | tee -a dte-checks.log
+fi
+if [ "$attempts" -ge 5 ]; then
+    failure=true
+fi
 
 image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/export?dpi=96&transparent=true&format=svg&bbox=-9696759.515792493%2C5077501.619710184%2C-8868793.625407506%2C5533066.308289812&bboxSR=102100&imageSR=102100&size=1354%2C745&f=image'
 
+#--dump-header /dev/fd/1 \
 echo "fetching svg"
-curl  \
+attempts=$(retryLoop curl  \
     -s -S \
     --retry 5 \
-    --dump-header /dev/fd/1 \
     -o "output/outage-$(date --iso=seconds).svg" \
-    "$image"
+    "$image")
+if [ "$attempts" -ne 0 ]; then
+    echo "svg attempts: $attempts" | tee -a dte-checks.log
+fi
+if [ "$attempts" -ge 5 ]; then
+    failure=true
+fi
 
 geojson='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/2/query?WHERE=OBJECTID%3E0&outFields=*&f=geojson'
 
@@ -41,16 +70,22 @@ offset=0
 while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; do
     f="$finalFile-$offset"
     echo "fetching geojson, offset $offset into $f"
-    curl  \
+    attempts=$(retryLoop curl  \
         -s -S \
         --retry 5 \
-        --dump-header /dev/fd/1 \
         -o "$f" \
-        "$geojson&resultOffset=$offset"
+        "$geojson&resultOffset=$offset")
+    if [ "$attempts" -ne 0 ]; then
+        echo "geojson attempts at offset $offset: $attempts" | tee -a dte-checks.log
+    fi
+    if [ "$attempts" -ge 5 ]; then
+        failure=true
+        die "failed to fetch geojson at $date, aborting"
+    fi
 
     exceededTransferLimit=$(jq -r '.exceededTransferLimit' "$f")
     offset=$(( offset + $(jq '.features | length' "$f") ))
-    echo "exceededTransferLimit $exceededTransferLimit"
+    #echo "exceededTransferLimit $exceededTransferLimit"
 done
 
 # merge all geojson to one file
@@ -61,3 +96,7 @@ filename=$(basename "$finalFile")
 cd output
 tar -czvf "./$filename.tgz" "./$filename"
 rm "$filename"
+
+if [ "$failure" = true ]; then
+    die "too many retries"
+fi

@@ -4,6 +4,8 @@ cd "$(dirname "$0")"
 
 # */5 * * * * /$whatever/cronic /$whatever/scrape.sh
 
+attemptsMax=10
+
 msg() {
     echo >&2 -e "${1-}"
 }
@@ -21,10 +23,11 @@ date --iso=seconds >> dte-checks.log
 
 # lastImageDate=$(find output -type f -iname "*.png" | sort | tail -n1 | sed 's/output\/outage-\(.*\).png/\1/')
 
+retries=0
 retryLoop () {
     retries=0
     until [ "$retries" -ge 5 ]; do
-        $($@) 2>&1 && break
+        $@ 1>&2 && break
         retries=$((retries+1))
         sleep 15
     done
@@ -33,14 +36,14 @@ retryLoop () {
 failure=false
 echo "fetching png"
 attempts=$(retryLoop curl  \
-    -s -S \
+    -s -S --stderr - \
     --retry 5 \
     -o "output/outage-$(date --iso=seconds).png" \
     "$image")
 if [ "$attempts" -ne 0 ]; then
     echo "png attempts: $attempts" | tee -a dte-checks.log
 fi
-if [ "$attempts" -ge 5 ]; then
+if [ "$attempts" -ge "$attemptsMax" ]; then
     failure=true
 fi
 
@@ -48,15 +51,18 @@ image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations
 
 #--dump-header /dev/fd/1 \
 echo "fetching svg"
-attempts=$(retryLoop curl  \
-    -s -S \
+set -x
+retryLoop curl  \
+    -s -S --stderr - \
     --retry 5 \
     -o "output/outage-$(date --iso=seconds).svg" \
-    "$image")
+    "$image" 2>&1
+attempts=$retries
+set +x
 if [ "$attempts" -ne 0 ]; then
     echo "svg attempts: $attempts" | tee -a dte-checks.log
 fi
-if [ "$attempts" -ge 5 ]; then
+if [ "$attempts" -ge "$attemptsMax" ]; then
     failure=true
 fi
 
@@ -71,14 +77,14 @@ while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; d
     f="$finalFile-$offset"
     echo "fetching geojson, offset $offset into $f"
     attempts=$(retryLoop curl  \
-        -s -S \
+        -s -S --stderr - \
         --retry 5 \
         -o "$f" \
-        "$geojson&resultOffset=$offset")
+        "$geojson&resultOffset=$offset") 2>&1
     if [ "$attempts" -ne 0 ]; then
         echo "geojson attempts at offset $offset: $attempts" | tee -a dte-checks.log
     fi
-    if [ "$attempts" -ge 5 ]; then
+    if [ "$attempts" -ge "$attemptsMax" ]; then
         failure=true
         die "failed to fetch geojson at $date, aborting"
     fi

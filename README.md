@@ -12,30 +12,37 @@ I would like to be able to answer questions like
 ## Data
 I didn't realize that the geojson was paginated till recently.
 * 2021-11-08T15:36:27 to 2023-02-26T18:10:09: Truncated sometimes to 1k events.
-* 2023-02-26T18:11:20 and onwards not truncated
-* 2023-03-04T20:47:10 and onwards stored as geojson.tgz
+* 2023-02-26T18:11:20 and onwards stored as geojson.tgz
 
-If you want any of this data, please let me know (email in commits, or an issue, or whatever)
+If you want any of this data, please let me know (email in commits, or an issue,
+or whatever)
 
 ## next steps
 * figure out how to re-assemble the geojson exports into postgis
 * Actually do analysis
 
-## Running
+
+## What is actually in this repo
+### `scrape`
+This is the script I have running in a cronjob
+
+There is also `fetch.sh` in the root of the repo to download data from my server
+This should really be cleaned up but in the meantime I don't want to lose the
+script
+
+### everything else
+THere is a `docker-compose.yml` to orchistrate all this
+* `db`: postgis db, with a script to import a single geojson data file
+* `api`: expose the db
+* `web`: call the api to get the geojson, and put the outage information on an
+interactive map
+
+#### Running
 ```
 docker-compose up
 docker exec -it dte-outage-history_postgres_1 /bin/bash -c "cd /data && ./try.sh"
 ```
 go to http://localhost:8088
-
-## Organization
-
-* web
-  * website to show stuff
-* scrape
-  * scraper for geojson, svg, png
-* db
-  * try to put scrape stuff in database
 
 ## Notes on DTE data
 * png: https://outage.dteenergy.com/outageLayerImage.png

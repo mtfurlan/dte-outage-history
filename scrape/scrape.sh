@@ -26,10 +26,10 @@ date --iso=seconds >> dte-checks.log
 retries=0
 retryLoop () {
     retries=0
-    until [ "$retries" -ge 5 ]; do
+    until [ "$retries" -ge "$attemptsMax" ]; do
         $@ 1>&2 && break
         retries=$((retries+1))
-        sleep 15
+        sleep 5
     done
     echo $retries
 }
@@ -52,12 +52,11 @@ image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations
 #--dump-header /dev/fd/1 \
 echo "fetching svg"
 set -x
-retryLoop curl  \
+attempts=$(retryLoop curl  \
     -s -S --stderr - \
     --retry 5 \
     -o "output/outage-$(date --iso=seconds).svg" \
-    "$image" 2>&1
-attempts=$retries
+    "$image") 2>&1
 set +x
 if [ "$attempts" -ne 0 ]; then
     echo "svg attempts: $attempts" | tee -a dte-checks.log
@@ -78,7 +77,7 @@ while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; d
     echo "fetching geojson, offset $offset into $f"
     attempts=$(retryLoop curl  \
         -s -S --stderr - \
-        --retry 5 \
+        --retry 10 \
         -o "$f" \
         "$geojson&resultOffset=$offset") 2>&1
     if [ "$attempts" -ne 0 ]; then

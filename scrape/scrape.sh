@@ -18,6 +18,7 @@ die() {
     exit "$code"
 }
 
+mapServer=https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer
 image=https://outage.dteenergy.com/outageLayerImage.png
 
 date --iso=seconds >> dte-checks.log
@@ -56,7 +57,26 @@ if [ "$attempts" -ge "$attemptsMax" ]; then
     failure=true
 fi
 
-image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/export?dpi=96&transparent=true&format=svg&bbox=-9696759.515792493%2C5077501.619710184%2C-8868793.625407506%2C5533066.308289812&bboxSR=102100&imageSR=102100&size=1354%2C745&f=image'
+# initial and full are from the layer information
+# this range loads a blank image? not sure why
+initialXMin=-9250703.18187188
+initialYMin=5210440.516810059
+initialXMax=-9242543.529102448
+initialYMax=5213259.13222807
+
+# this seems to be the actual extent of the data
+fullXMin=-9391354.1009
+fullYMin=5134197.2961
+fullXMax=-9174147.5244
+fullYMax=5476370.6319
+
+# these were some random numbers I picked and they worked and I forgot to check them for a while
+# keeping them for consistancy
+oopsXMin=-9696759.515792493
+oopsYMin=5077501.619710184
+oopsXMax=-8868793.625407506
+oopsYMax=5533066.308289812
+svg="$mapServer/export?dpi=96&transparent=true&format=svg&bbox=$oopsXMin%2C$oopsYMin%2C$oopsXMax%2C$oopsYMax&bboxSR=102100&imageSR=102100&size=1354%2C745&f=image"
 
 #--dump-header /dev/fd/1 \
 echo "fetching svg"
@@ -76,9 +96,9 @@ if [ "$failure" = true ]; then
     die "failure after svg; giving up early"
 fi
 
-geojson='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/2/query?WHERE=OBJECTID%3E0&outFields=*&f=geojson'
 
-# geojson is paginated if .exceededTransferLimit is true
+## geojson is paginated if .exceededTransferLimit is true
+geojson="$mapServer/2/query?text=%25&f=geojson&units=esriSRUnit_Meter&returnTrueCurves=true"
 date=$(date --iso=seconds)
 finalFile="output/outage-$date.geojson"
 exceededTransferLimit=true

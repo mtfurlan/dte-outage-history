@@ -20,6 +20,7 @@ die() {
 
 mapServer=https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer
 image=https://outage.dteenergy.com/outageLayerImage.png
+userAgent="https://github.com/mtfurlan/dte-outage-history"
 
 date --iso=seconds >> dte-checks.log
 
@@ -46,6 +47,7 @@ retryLoop () {
 failure=false
 echo "fetching png"
 attempts=$(retryLoop curl  \
+    --user-agent "$userAgent" \
     -s -S --stderr - \
     --retry 5 \
     -o "output/outage-$(date --iso=seconds).png" \
@@ -81,6 +83,7 @@ svg="$mapServer/export?dpi=96&transparent=true&format=svg&bbox=$oopsXMin%2C$oops
 #--dump-header /dev/fd/1 \
 echo "fetching svg"
 attempts=$(retryLoop curl  \
+    --user-agent "$userAgent" \
     --insecure \
     -s -S --stderr - \
     --retry 5 \
@@ -107,6 +110,7 @@ while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; d
     f="$finalFile-$offset"
     echo "fetching geojson, offset $offset into $f"
     attempts=$(retryLoop curl  \
+        --user-agent "$userAgent" \
         --insecure \
         -s -S --stderr - \
         --retry 10 \

@@ -2,9 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+set -x
 # */5 * * * * /$whatever/cronic /$whatever/scrape.sh
 
-attemptsMax=10
+attemptsMax=2
 
 msg() {
     echo >&2 -e "${1-}"
@@ -27,11 +28,19 @@ retries=0
 retryLoop () {
     retries=0
     until [ "$retries" -ge "$attemptsMax" ]; do
-        $@ 1>&2 && break
+        lastfail=true
+        $@ 1>&2 && lastfail=false && break
         retries=$((retries+1))
         sleep 5
     done
+
     echo $retries
+
+    if [ "$lastfail" = true ]; then
+        return 1
+    else
+        return 0
+    fi
 }
 failure=false
 echo "fetching png"
@@ -51,18 +60,20 @@ image='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations
 
 #--dump-header /dev/fd/1 \
 echo "fetching svg"
-set -x
 attempts=$(retryLoop curl  \
+    --insecure \
     -s -S --stderr - \
     --retry 5 \
     -o "output/outage-$(date --iso=seconds).svg" \
-    "$image") 2>&1
-set +x
+    "$svg") 2>&1
 if [ "$attempts" -ne 0 ]; then
     echo "svg attempts: $attempts" | tee -a dte-checks.log
 fi
 if [ "$attempts" -ge "$attemptsMax" ]; then
     failure=true
+fi
+if [ "$failure" = true ]; then
+    die "failure after svg; giving up early"
 fi
 
 geojson='https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer/2/query?WHERE=OBJECTID%3E0&outFields=*&f=geojson'
@@ -76,6 +87,7 @@ while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; d
     f="$finalFile-$offset"
     echo "fetching geojson, offset $offset into $f"
     attempts=$(retryLoop curl  \
+        --insecure \
         -s -S --stderr - \
         --retry 10 \
         -o "$f" \

@@ -101,7 +101,7 @@ fi
 
 
 ## geojson is paginated if .exceededTransferLimit is true
-geojson="$mapServer/2/query?text=%25&f=geojson&units=esriSRUnit_Meter&returnTrueCurves=true"
+geojson="$mapServer/2/query?text=%25&f=geojson&units=esriSRUnit_Meter&returnTrueCurves=true&outFields=*"
 date=$(date --iso=seconds)
 finalFile="output/outage-$date.geojson"
 exceededTransferLimit=true

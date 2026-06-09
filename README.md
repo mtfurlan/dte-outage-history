@@ -12,6 +12,7 @@ The SVG has some stupid bounds because I picked the wrong ones when starting and
 * 2023-02-26T18:11:20 and onwards stored as geojson.tgz
 * 2025-06-18T16:05:02-04:00: DTE started putting a 403 response from azure application gateway if it looks like a query, so I only have the svg and png output
 * 2025-08-25T12:18:49-04:00: fixed geojson scraping, moved to 15 minutes because that's how often the data updates
+* 2026-06-09: I noticed they weren't returning data fields, unsure for how long, but kinda fixed it
 
 
 If you want any of this data, please let me know (email in commits, or an issue,

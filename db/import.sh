@@ -47,7 +47,7 @@ PGDATABASE=dte
 PGHOST=localhost
 export PGPORT PGPASSWORD PGUSER PGDATABASE PGHOST
 
-psql -c "DROP TABLE IF EXISTS outages"
+#psql -c "DROP TABLE IF EXISTS outages"
 
 psql 1>&2 << EOF
 CREATE TABLE IF NOT EXISTS outages (
@@ -85,16 +85,16 @@ EOF
 tmp=$(mktemp -d -t dte-import-XXXXXX)
 echo "tmp dir is $tmp"
 while IFS= read -r -d '' file <&3; do
-    date=$(basename "$file")
-    date=${date/#outage-/}
+    f=$(basename "$file")
+    date=${f/#outage-/}
     date=${date/%.geojson.tgz/}
     timestamp=$(date -d "$date" +%s)
 
-    if [[ "$(runQuery "SELECT COUNT(*) FROM outages WHERE timestamp='$date';" | jq -r .[0].count)" -eq 0 ]]; then
-        echo "already imported $file"
+    if [[ "$(runQuery "SELECT COUNT(*) FROM outages WHERE timestamp='$date';" | jq -r '.[0].count')" -gt 0 ]]; then
+        echo "already imported $f"
         continue
     else
-        echo "importing $file"
+        echo "importing $f"
     fi
     # the jq ensures that all these fields are at least populated with `null`
     # some number of the data between 2025-08-25 and 2026-06-09 doesn't ahve

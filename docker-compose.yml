@@ -1,4 +1,4 @@
-version: '3.7'
+name: dte-outatge-history
 services:
   postgres:
     # based on postgis/postgis with gdal-bin
@@ -6,51 +6,54 @@ services:
         context: ./db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dte
     ports:
       - '5438:5432'
     volumes:
-      - ./db:/data
-  web:
-    image: node:16
-    command: "npm start"
-    volumes:
-      - ./web:/app
-    working_dir: /app
-    environment:
-      - PORT=4000
-    restart: unless-stopped
+      - .:/workdir
+      - ./db/postgres-data:/var/lib/postgresql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+  #web:
+  #  image: node:16
+  #  command: "npm start"
+  #  volumes:
+  #    - ./web:/app
+  #  working_dir: /app
+  #  environment:
+  #    - PORT=4000
+  #  restart: unless-stopped
 
-  api:
-    image: node:16
-    command: "npm start"
-    volumes:
-      - ./api:/app
-    working_dir: /app
-    environment:
-      - PORT=4000
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
-    depends_on:
-      - postgres
-    restart: unless-stopped
+  #api:
+  #  image: node:16
+  #  command: "npm start"
+  #  volumes:
+  #    - ./api:/app
+  #  working_dir: /app
+  #  environment:
+  #    - PORT=4000
+  #    - POSTGRES_HOST=postgres
+  #    - POSTGRES_PORT=5432
+  #    - POSTGRES_USER=postgres
+  #    - POSTGRES_PASSWORD=postgres
+  #    - POSTGRES_DB=postgres
+  #  depends_on:
+  #    - postgres
+  #  restart: unless-stopped
 
-  nginx:
-    image: nginx:latest
-    volumes:
-      - ./nginx.template:/etc/nginx/templates/default.conf.template
-    ports:
-      - 8088:80
-    environment:
-        - NGINX_PORT=80
-        - API_PORT=4000
-        - API_NAME=api
-        - APP_PORT=4000
-        - APP_NAME=web
-    depends_on:
-      - web
-      - api
+  #nginx:
+  #  image: nginx:latest
+  #  volumes:
+  #    - ./nginx.template:/etc/nginx/templates/default.conf.template
+  #  ports:
+  #    - 8088:80
+  #  environment:
+  #      - NGINX_PORT=80
+  #      - API_PORT=4000
+  #      - API_NAME=api
+  #      - APP_PORT=4000
+  #      - APP_NAME=web
+  #  depends_on:
+  #    - web
+  #    - api

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS outages (
-    --ogc_fid SERIAL PRIMARY KEY,
+    ogc_fid SERIAL PRIMARY KEY,
     timestamp TIMESTAMP WITH TIME ZONE,
     job_id TEXT,
     objectid INT,
@@ -25,6 +25,5 @@ CREATE TABLE IF NOT EXISTS outages (
     shape_length DOUBLE PRECISION,
     shape_area DOUBLE PRECISION,
     service_center TEXT,
-    geometry geography(Polygon,4326),
-    PRIMARY KEY(timestamp, job_id)
+    geometry geography(Polygon,4326)
 );

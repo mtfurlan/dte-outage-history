@@ -2,6 +2,9 @@
 set -euo pipefail
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+# db config
+. "$DIR/.env"
+
 runQuery()
 {
     chomp() {
@@ -40,50 +43,13 @@ runQuery()
     psql -c "$sql" \
         | grep -v "^--*\W\?$\|json_agg\|^(1 row)" | jq -c .
 }
-PGPORT=5432
-PGPASSWORD=postgres
-PGUSER=postgres
-PGDATABASE=dte
-PGHOST=localhost
-export PGPORT PGPASSWORD PGUSER PGDATABASE PGHOST
 
-#psql -c "DROP TABLE IF EXISTS outages"
-
-psql 1>&2 << EOF
-CREATE TABLE IF NOT EXISTS outages (
-    --ogc_fid SERIAL PRIMARY KEY,
-    timestamp TIMESTAMP WITH TIME ZONE,
-    job_id TEXT,
-    objectid INT,
-    add_dttm TIMESTAMP WITH TIME ZONE,
-    tycod TEXT,
-    num_cust INT,
-    num_cust_restored INT,
-    toal_cust_affected INT,
-    off_dttm TIMESTAMP WITH TIME ZONE,
-    est_rep_dttm TIMESTAMP WITH TIME ZONE,
-    cause TEXT,
-    dev_name TEXT,
-    dev_id INT,
-    dev_type INT,
-    dev_type_name TEXT,
-    event_status TEXT,
-    dispatch_dttm TIMESTAMP WITH TIME ZONE,
-    crew_status TEXT,
-    est_rep_enddttm TIMESTAMP WITH TIME ZONE,
-    circuit_est_dttm TIMESTAMP WITH TIME ZONE,
-    circuit_est_enddttm TIMESTAMP WITH TIME ZONE,
-    storm_mode TEXT,
-    shape_length DOUBLE PRECISION,
-    shape_area DOUBLE PRECISION,
-    service_center TEXT,
-    geometry geography(Polygon,4326),
-    PRIMARY KEY(timestamp, job_id)
-);
-EOF
 # not deleting for debug, not great TODO cleanup
 tmp=$(mktemp -d -t dte-import-XXXXXX)
 echo "tmp dir is $tmp"
+
+childPID=
+trap 'set -x; echo "got SIGINT, exiting soon…"; wait "$childPID"' SIGINT
 while IFS= read -r -d '' file <&3; do
     f=$(basename "$file")
     date=${f/#outage-/}
@@ -169,7 +135,9 @@ EOF
 
     #-lco GEOMETRY_NAME=geometry
     # this actually runs the import of a file to the database
-    ogr2ogr -of "PostgreSQL" PG:"dbname=dte user=postgres" -nln "outages" -append  -dialect sqlite -sql "$SQL"  "$tmp/file.geojson"
+    ogr2ogr -of "PostgreSQL" PG:"dbname=dte user=postgres" -nln "outages" -append  -dialect sqlite -sql "$SQL"  "$tmp/file.geojson" &
+    childPID=$!
+    wait "$childPID"
 
 done 3< <(find "$DIR/../scrape/output" -type f -name "outage-*.geojson.tgz" -print0)
 

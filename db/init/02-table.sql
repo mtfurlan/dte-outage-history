@@ -27,3 +27,8 @@ CREATE TABLE IF NOT EXISTS outages (
     service_center TEXT,
     geometry geography(Polygon,4326)
 );
+
+CREATE TABLE IF NOT EXISTS imported (
+    filename TEXT PRIMARY KEY,
+    imported TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

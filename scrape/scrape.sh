@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
+OUTPUT_DIR="output"
 
 set -x
 # */5 * * * * /$whatever/cronic /$whatever/scrape.sh
@@ -31,7 +33,7 @@ retryLoop () {
     retries=0
     until [ "$retries" -ge "$attemptsMax" ]; do
         lastfail=true
-        $@ 1>&2 && lastfail=false && break
+        "$@" 1>&2 && lastfail=false && break
         retries=$((retries+1))
         sleep 5
     done
@@ -50,7 +52,7 @@ attempts=$(retryLoop curl  \
     --user-agent "$userAgent" \
     -s -S --stderr - \
     --retry 5 \
-    -o "output/outage-$(date --iso=seconds).png" \
+    -o "$OUTPUT_DIR/outage-$(date --iso=seconds).png" \
     "$image")
 if [ "$attempts" -ne 0 ]; then
     echo "png attempts: $attempts" | tee -a dte-checks.log
@@ -59,18 +61,21 @@ if [ "$attempts" -ge "$attemptsMax" ]; then
     failure=true
 fi
 
-# initial and full are from the layer information
-# this range loads a blank image? not sure why
-initialXMin=-9250703.18187188
-initialYMin=5210440.516810059
-initialXMax=-9242543.529102448
-initialYMax=5213259.13222807
+# shellcheck disable=SC2034 # unused, in {} for shellcheck
+{
+    # initial and full are from the layer information
+    # this range loads a blank image? not sure why
+    initialXMin=-9250703.18187188
+    initialYMin=5210440.516810059
+    initialXMax=-9242543.529102448
+    initialYMax=5213259.13222807
 
-# this seems to be the actual extent of the data
-fullXMin=-9391354.1009
-fullYMin=5134197.2961
-fullXMax=-9174147.5244
-fullYMax=5476370.6319
+    # this seems to be the actual extent of the data
+    fullXMin=-9391354.1009
+    fullYMin=5134197.2961
+    fullXMax=-9174147.5244
+    fullYMax=5476370.6319
+}
 
 # these were some random numbers I picked and they worked and I forgot to check them for a while
 # keeping them for consistancy
@@ -87,7 +92,7 @@ attempts=$(retryLoop curl  \
     --insecure \
     -s -S --stderr - \
     --retry 5 \
-    -o "output/outage-$(date --iso=seconds).svg" \
+    -o "$OUTPUT_DIR/outage-$(date --iso=seconds).svg" \
     "$svg") 2>&1
 if [ "$attempts" -ne 0 ]; then
     echo "svg attempts: $attempts" | tee -a dte-checks.log
@@ -103,7 +108,7 @@ fi
 ## geojson is paginated if .exceededTransferLimit is true
 geojson="$mapServer/2/query?text=%25&f=geojson&units=esriSRUnit_Meter&returnTrueCurves=true&outFields=*"
 date=$(date --iso=seconds)
-finalFile="output/outage-$date.geojson"
+finalFile="$OUTPUT_DIR/outage-$date.geojson"
 exceededTransferLimit=true
 offset=0
 while [[ -n "$exceededTransferLimit" && "$exceededTransferLimit" == "true" ]]; do
@@ -134,7 +139,9 @@ done
 jq -s '{"type": .[0].type, "crs": .[0].crs, "features": map(.features[])}' "$finalFile"-* > $finalFile
 rm "$finalFile"-*
 filename=$(basename "$finalFile")
-cd output
+# TODO: try not CD but instead
+# tar -C "$OUTPUT_DIR" -czvf "./$filename.tgz" "./$filename"
+cd "$OUTPUT_DIR"
 tar -czvf "./$filename.tgz" "./$filename"
 rm "$filename"
 

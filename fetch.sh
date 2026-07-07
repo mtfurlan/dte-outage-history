@@ -26,3 +26,13 @@ if [ "$missing" = true ]; then
 else
     ssh personalAWS 'find dte-outage-history/scrape/output/ -type f | grep -v "'"$date"'" | xargs -r rm'
 fi
+find dte-outage-history/scrape/output/ -type f -print0 | xargs -r0 mv -n -t dte-outage-history/raw_files/import/
+
+while IFS= read -r -d '' file <&3; do
+    target="dte-outage-history/raw_files/import/$(basename "$file")"
+    if diff -q "$file"  "$target"; then
+        rm "$file"
+    else
+        echo "$file and $target differ"
+    fi
+done 3< <(find dte-outage-history/scrape/output/ -type f -print0)

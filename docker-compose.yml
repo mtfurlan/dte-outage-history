@@ -12,6 +12,7 @@ services:
     ports:
       - '5438:5432'
     volumes:
+      - /scratch/dte-outage-history/raw_files:/data
       - .:/workdir
       - ./db/postgres-data:/var/lib/postgresql
       - ./db/init:/docker-entrypoint-initdb.d:ro

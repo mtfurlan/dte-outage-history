@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+. "$DIR/common.sh"
+
+
+file=${1:?must pass filename}
+if [[ ! -f "$file" ]]; then
+    echo "file not found $file"
+    exit 1
+fi
+f=$(basename "$file")
+date=${f/#outage-/}
+date=${date/%.geojson.tgz/}
+date=${date/%.svg/}
+date=${date/%.png/}
+date=${date/%.geojson-*/}
+if [[ -z "$date" ]]; then
+    echo "unable to parse date from '$file'"
+    exit 2
+fi
+dateDir=$(TZ='America/Detroit' date -d "$date" +"%Y/%m/%d")
+
+mkdir -p "$PROCESSED_DIR/$dateDir"
+mv "$file" "$PROCESSED_DIR/$dateDir/$f"
+echo "$PROCESSED_DIR/$dateDir/$f"

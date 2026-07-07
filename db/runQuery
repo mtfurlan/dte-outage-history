@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shellcheck disable=SC2120
+h () {
+    # if arguments, print them
+    [ $# == 0 ] || echo "$*"
+
+  cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [OPTION]... <SOME SQL STRING> -- [PSQL PARAMS]
+       $(basename "${BASH_SOURCE[0]}") [OPTION]... -f <FILE> -- [PSQL PARAMS]
+    super janky run sql thing from stdin, string, or file
+    file can be - for stdin
+Available options:
+  -f, --file=file       run file
+  -j, --json            output as json
+      --set=, --variable NAME=VALUE
+                        set psql variable NAME to VALUE
+  -h, --help            show this help
+EXAMPLES
+  runQuery --set "ts=2026-06-02 03:09:16+00" "SELECT * FROM events WHERE created_at=:'ts'"
+EOF
+
+    # if args, exit 1 else exit 0
+    [ $# == 0 ] || exit 1
+    exit 0
+}
+
+if ! PARSED_ARGS=$(getopt -o "hf:j" --long "help,file:,json,variable:,set:" -n "$0" -- "$@") ; then
+    h "getopt issue ^"
+fi
+eval set -- "$PARSED_ARGS"
+
+file=
+json=false
+variables=()
+while true ; do
+    case "$1" in
+        -h|--help) h ;;
+        -f|--file) file=$2; shift 2 ;;
+        --set|--variable) variables+=("$2"); shift 2 ;;
+        -j|--json) json=true; shift ;;
+        --) shift ; break ;;
+        *) die "issue parsing args, unexpected argument '$0'!" ;;
+    esac
+done
+
+chomp() {
+    #https://stackoverflow.com/a/3352015/2423187
+    local var="$*"
+    # remove leading whitespace characters
+    var="${var#"${var%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"
+    printf '%s' "$var"
+}
+
+if [ -n "$file" ]; then
+    sql=$(cat "$file")
+else
+    sql=${1:-}
+    shift
+fi
+
+#remove comments
+# shellcheck disable=SC2001
+sql=$(echo "$sql" | sed 's/ *--.*$//')
+# remove newline
+sql=${sql//[$'\n\r ']/ }
+sql=${sql//  / }
+
+#escape quote
+sql=${sql//\"/\\\\\\\"}
+
+#escape $
+sql=${sql//\$/\\\\$}
+
+sql=$(chomp "$sql")
+
+#if [[ "${sql^^}" == "SELECT"* ]] || [[ "${sql^^}" == *"RETURNING"* ]]; then
+if [[ "$json" = true ]]; then
+    sql="WITH sq AS (${sql/%;/}) SELECT json_agg(row_to_json(sq)) FROM sq;"
+fi
+
+
+vflags=()
+for v in "${variables[@]}"; do
+    vflags+=(--variable "$v")
+done
+
+set -x
+psql "${vflags[@]}" "$@" <<< "$sql" \
+    | grep -v "^--*\W\?$\|json_agg\|^(1 row)"

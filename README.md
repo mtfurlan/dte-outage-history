@@ -2,7 +2,7 @@
 The goal is to analyze DTE outage data to to answer:
 * how often power goes out at a given location
 * average outage duration for a given location
-* what the worst/best places are for some defintion of best/worst
+* what the worst/best places are for some definition of best/worst
 
 ## Data
 Collecting SVG, PNG, and geojson
@@ -18,47 +18,40 @@ The SVG has some stupid bounds because I picked the wrong ones when starting and
 If you want any of this data, please let me know (email in commits, or an issue,
 or whatever)
 
+### Analysis
+* [Deep Learning-Based Weather-Related Power Outage Prediction with Socio-Economic and Power Infrastructure Data](https://arxiv.org/abs/2404.03115)
+
 ### next steps
-* figure out how to re-assemble the geojson exports into postgis
+* confirm we're importing stuff correctly
   * job_id is unique per job, we can track based on that
   * shape polygon can change
   * affected customer can change
   * "According to DTE's reply, the shape does not actually reflect the real-world coverage of the outage. It is an estimate about the "electricity customers" that the outages affect."
+* warnings if import doesn't import anything
+* warnings if scrape doesn't fetch anything
 * Actually do analysis
 
-## Analysis
-* [Deep Learning-Based Weather-Related Power Outage Prediction with Socio-Economic and Power Infrastructure Data](https://arxiv.org/abs/2404.03115)
-
 ## What is actually in this repo
-### `scrape`
+### `scrape.sh`
 This is the script I have running in a cronjob
 
-There is also `fetch.sh` in the root of the repo to download data from my server
-This should really be cleaned up but in the meantime I don't want to lose the
-script
+### database
+container with postgis, and the tools to import geojson
 
-### everything else
-can import a single snapshot into postgis, but no combining yet
+use docker compose to start the db, then import.sh inside the container
 
-
-There is a `docker-compose.yml` to orchistrate all this
-* `db`: postgis db, with a script to import a single geojson data file
+### webapp
 * `api`: expose the db
 * `web`: call the api to get the geojson, and put the outage information on an
 interactive map
 
-#### Running
-```
-docker-compose up
-docker exec -it dte-outage-history_postgres_1 /bin/bash -c "cd /data && ./try.sh"
-```
-go to http://localhost:8088
+this hasn't been tested since I got multiple dates importing into the database
 
 ## Notes on DTE data
 arcgis REST URL
 * https://outagemap.serv.dteenergy.com/GISRest/services/OMP/OutageLocations/MapServer
 
-Documnetation:
+Documentation:
 * [query](https://developers.arcgis.com/rest/services-reference/enterprise/query-map-service-layer/): query into json
 * [export](https://developers.arcgis.com/rest/services-reference/enterprise/export-map/): export image
 

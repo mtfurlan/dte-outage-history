@@ -16,11 +16,11 @@ services:
       - .:/workdir
       - ./db/postgres-data:/var/lib/postgresql
       - ./db/init:/docker-entrypoint-initdb.d:ro
-  #web:
+  #app:
   #  image: node:16
   #  command: "npm start"
   #  volumes:
-  #    - ./web:/app
+  #    - .web/app:/app
   #  working_dir: /app
   #  environment:
   #    - PORT=4000
@@ -30,7 +30,7 @@ services:
   #  image: node:16
   #  command: "npm start"
   #  volumes:
-  #    - ./api:/app
+  #    - ./web/api:/app
   #  working_dir: /app
   #  environment:
   #    - PORT=4000
@@ -46,7 +46,7 @@ services:
   #nginx:
   #  image: nginx:latest
   #  volumes:
-  #    - ./nginx.template:/etc/nginx/templates/default.conf.template
+  #    - ./web/nginx.template:/etc/nginx/templates/default.conf.template
   #  ports:
   #    - 8088:80
   #  environment:
@@ -56,5 +56,5 @@ services:
   #      - APP_PORT=4000
   #      - APP_NAME=web
   #  depends_on:
-  #    - web
+  #    - app
   #    - api
